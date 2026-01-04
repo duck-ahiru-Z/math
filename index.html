@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duck Math Editor Ultimate Pro (Matrix Fixed)</title>
+    
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.min.js"></script>
+    
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #202124;
+            --panel-bg: #2d2e31;
+            --text-color: #e8eaed;
+            --duck-yellow: #fdd835;
+            --duck-orange: #ff8a65;
+            --btn-bg: #3c4043;
+            --btn-hover: #5f6368;
+            --accent-blue: #8ab4f8;
+            --accent-green: #81c995;
+            --toolbar-bg: #303134;
+            --matrix-color: #9aa0a6;
+        }
+
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            color: var(--text-color);
+        }
+
+        h1 {
+            color: var(--duck-yellow);
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* --- エディタエリア --- */
+        .editor-wrapper {
+            background: #fff;
+            color: #000;
+            padding: 25px 30px;
+            border-radius: 8px;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            border: 2px solid var(--duck-yellow);
+            overflow-x: auto;
+        }
+
+        #math-field {
+            width: 100%;
+            font-size: 2.2rem;
+            border: none;
+            outline: none;
+        }
+        .mq-editable-field { border: none !important; box-shadow: none !important; }
+        .mq-root-block { display: inline-block; width: 100%; }
+
+        /* --- ツールバー --- */
+        .toolbar {
+            background: var(--panel-bg);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #5f6368;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+        .tool-group { display: flex; gap: 5px; }
+        .tool-btn {
+            background: var(--toolbar-bg);
+            border: 1px solid #5f6368;
+            color: #e8eaed;
+            height: 40px;
+            padding: 0 15px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.1s;
+            font-family: 'Zen Maru Gothic', sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .tool-btn:active { transform: translateY(2px); }
+        .btn-ac { color: #f28b82; border-color: #f28b82; }
+        .btn-bs { color: #f28b82; }
+        .btn-nav { color: var(--accent-blue); font-family: sans-serif; font-size: 1.2rem; width: 45px;}
+        
+        .toggle-btn { background: #3c4043; color: #aaa; border: 1px solid #555; }
+        .toggle-btn.active {
+            background: var(--accent-green); color: #202124; border-color: var(--accent-green);
+            box-shadow: 0 0 8px rgba(129, 201, 149, 0.4);
+        }
+
+        /* --- キーボードエリア --- */
+        .keyboard-area {
+            background: var(--panel-bg);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #5f6368;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .cat-tabs {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #444;
+            margin-bottom: 5px;
+        }
+        .cat-btn {
+            background: transparent;
+            border: 1px solid #5f6368;
+            color: #bdc1c6;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .cat-btn.active {
+            background: var(--duck-yellow); color: #202124; border-color: var(--duck-yellow); font-weight: bold;
+        }
+
+        .keys-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(65px, 1fr));
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .math-btn {
+            background: var(--btn-bg);
+            border: 1px solid #5f6368;
+            border-radius: 6px;
+            height: 55px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: #e8eaed;
+            transition: all 0.1s;
+            position: relative;
+            font-family: 'Times New Roman', serif;
+            font-size: 1rem;
+        }
+        .math-btn:hover { background: var(--btn-hover); border-color: #8ab4f8; }
+        .math-btn:active { transform: translateY(2px); }
+        .btn-small-text { font-size: 0.75rem; }
+
+        /* --- アイコンCSS (行列用) --- */
+        .icon-frac { display:flex; flex-direction:column; align-items:center; gap:2px; }
+        .box-sm { width:10px; height:10px; border:1px dashed #9aa0a6; }
+        .bar { width:14px; height:1px; background:#e8eaed; }
+        
+        .icon-lim { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; width: 100%; }
+        .lim-main { font-size: 1.1rem; line-height: 1; }
+        .lim-sub { font-size: 0.65rem; margin-top: 2px; color: #aaa; display: flex; align-items: center; justify-content: center; gap: 1px; line-height: 1; }
+        
+        .icon-log-base { display:flex; align-items:flex-end; justify-content:center;}
+        .log-sub { font-size:0.6rem; margin-bottom:-2px; color:#aaa; margin-left:1px;}
+
+        /* 行列アイコン */
+        .icon-matrix-wrap { display: flex; align-items: center; height: 100%; gap: 1px;}
+        .matrix-bracket { font-size: 1.4rem; font-weight: lighter; color: var(--matrix-color); transform: scaleY(1.2);}
+        .matrix-grid { display: grid; gap: 2px; }
+        .matrix-cell { width: 6px; height: 6px; border: 1px solid var(--matrix-color); background: rgba(255,255,255,0.1); }
+        
+        /* --- 出力エリア --- */
+        .output-section {
+            background: var(--panel-bg); border-radius: 8px; overflow: hidden; border: 1px solid #5f6368;
+        }
+        .output-tabs { display: flex; background: #202124; border-bottom: 1px solid #5f6368; }
+        .output-tab {
+            flex: 1; padding: 12px; border: none; background: transparent; cursor: pointer; font-weight: bold; color: #9aa0a6; font-family: 'Zen Maru Gothic', sans-serif; font-size: 0.9rem;
+        }
+        .output-tab.active {
+            background: var(--panel-bg); color: var(--duck-yellow); border-bottom: 2px solid var(--duck-yellow);
+        }
+        .output-content { padding: 15px; }
+        textarea {
+            width: 100%; height: 100px; padding: 10px; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem;
+            border: 1px solid #5f6368; border-radius: 4px; resize: vertical; box-sizing: border-box; background: #171717; color: #e8eaed; line-height: 1.5;
+        }
+        textarea:focus { border-color: var(--duck-yellow); outline: none; }
+        
+        .hint-text { text-align: right; color: #aaa; font-size: 0.8rem; margin-bottom: 5px; }
+
+        .actions { display: flex; gap: 10px; justify-content: space-between; margin-top: 10px; }
+        .action-left { display: flex; gap: 10px; }
+        .action-right { display: flex; gap: 10px; }
+
+        .action-btn { padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 0.85rem; font-family: 'Zen Maru Gothic', sans-serif; }
+        .btn-copy { background: #8ab4f8; color: #202124; }
+        .btn-save { background: var(--duck-yellow); color: #202124; }
+        .btn-reflect { background: var(--accent-green); color: #202124; display: flex; align-items: center; gap: 5px; }
+        .btn-trash { background: #f28b82; color: #202124; }
+
+    </style>
+</head>
+<body>
+
+    <h1>スマホでも簡単 <span style="font-size:0.6em; background:#e67e22; color:#fff; padding:2px 6px; border-radius:4px; margin-left:5px;"></span>数式入力</h1>
+
+    <div class="container">
+        <div class="editor-wrapper" id="capture-target">
+            <span id="math-field"></span>
+        </div>
+
+        <div class="toolbar">
+            <div class="tool-group">
+                <button class="tool-btn btn-ac" onclick="clearField()">AC</button>
+                <button class="tool-btn btn-bs" onclick="mathField.keystroke('Backspace')">⌫</button>
+            </div>
+            <div class="tool-group">
+                <button class="tool-btn btn-nav" onclick="mathField.keystroke('Left')">←</button>
+                <button class="tool-btn btn-nav" onclick="mathField.keystroke('Right')">→</button>
+            </div>
+            <div class="tool-group">
+                <button class="tool-btn" onclick="insertSquare()">x²</button>
+                <button class="tool-btn" onclick="mathField.cmd('^')">xⁿ</button>
+                <button class="tool-btn" onclick="mathField.cmd('_')">xₙ</button>
+            </div>
+            <button id="btn-auto-paren" class="tool-btn toggle-btn active" onclick="toggleAutoParen()">Auto ( ) : ON</button>
+        </div>
+
+        <div class="keyboard-area">
+            <div class="cat-tabs" id="category-container"></div>
+            <div class="keys-grid" id="keys-container"></div>
+        </div>
+
+        <div class="output-section">
+            <div class="output-tabs">
+                <button class="output-tab active" onclick="switchTab('text')">基本形式 (Text ⇔ Editor)</button>
+                <button class="output-tab" onclick="switchTab('latex')">LaTeX</button>
+            </div>
+            <div class="output-content">
+                <div class="hint-text" id="hint-msg">下のボックスを編集して「▲ エディタに反映」を押すと、上の数式が更新されます</div>
+                <textarea id="output-area" spellcheck="false"></textarea>
+                <div class="actions">
+                    <div class="action-left">
+                        <button id="btn-reflect" class="action-btn btn-reflect" onclick="reflectToEditor()">▲ エディタに反映</button>
+                    </div>
+                    <div class="action-right">
+                        <button class="action-btn btn-copy" onclick="copyOutput()">コピー</button>
+                        <button class="action-btn btn-save" onclick="saveImage()">📷 画像保存</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var MQ = MathQuill.getInterface(2);
+        var mathFieldSpan = document.getElementById('math-field');
+        var outputArea = document.getElementById('output-area');
+        var hintMsg = document.getElementById('hint-msg');
+        var btnReflect = document.getElementById('btn-reflect');
+        var btnAutoParen = document.getElementById('btn-auto-paren');
+        
+        var currentMode = 'text'; 
+        var isAutoParen = true; 
+
+        var mathField = MQ.MathField(mathFieldSpan, {
+            spaceBehavesLikeTab: true,
+            autoCommands: 'pi theta sqrt sum int prod alpha beta gamma infinity vector',
+            autoOperatorNames: 'sin cos tan sec csc cot sinh cosh tanh sech csch coth arsinh arcosh artanh arsech arcsch arcoth lim log ln exp',
+            handlers: {
+                edit: function() { updateOutput(); }
+            }
+        });
+        
+        mathField.latex('\\displaystyle ');
+
+        function toggleAutoParen() {
+            isAutoParen = !isAutoParen;
+            if (isAutoParen) {
+                btnAutoParen.classList.add('active');
+                btnAutoParen.innerText = "Auto ( ) : ON";
+            } else {
+                btnAutoParen.classList.remove('active');
+                btnAutoParen.innerText = "Auto ( ) : OFF";
+            }
+        }
+
+        // x^2 のための特殊処理
+        function insertSquare() {
+            // 現在のカーソル位置の直前を確認するのは難しいので、
+            // 単純に ^2 を送る。空の場合は x^2 を送るなどの工夫も可能だが
+            // MathQuillは空の状態で ^ を打つと空箱を作るので、そこに2を入れる
+            mathField.cmd('^');
+            mathField.write('2');
+            mathField.keystroke('Right'); // 2乗から抜ける
+        }
+
+        // 行列アイコン生成ヘルパー
+        function createMatrixIcon(rows, cols) {
+            let cells = "";
+            for(let i=0; i<rows*cols; i++) cells += '<div class="matrix-cell"></div>';
+            let gridStyle = `grid-template-columns: repeat(${cols}, 1fr);`;
+            return `<div class="icon-matrix-wrap"><span class="matrix-bracket">[</span><div class="matrix-grid" style="${gridStyle}">${cells}</div><span class="matrix-bracket">]</span></div>`;
+        }
+
+        const keySets = {
+            "基本": [
+                { html: `<div class="icon-frac"><div class="box-sm"></div><div class="bar"></div><div class="box-sm"></div></div>`, cmd: "/" },
+                { label: "√", cmd: "\\sqrt" },
+                { html: `<span><sup>3</sup>√</span>`, write: "\\sqrt[3]{}", key: "left" }, 
+                { html: `<span><sup>n</sup>√</span>`, write: "\\sqrt[n]{}", key: "left" }, 
+                { label: "=", write: "=" },
+                { label: "≠", write: "\\neq" },
+                { label: "+", write: "+" },
+                { label: "-", write: "-" },
+                { label: "×", write: "\\times" },
+                { label: "÷", write: "\\div" },
+                { label: "±", write: "\\pm" },
+                { label: "∞", write: "\\infty" },
+                { label: "-∞", write: "-\\infty" },
+                { label: "π", write: "\\pi" },
+                { label: "e", write: "e" },
+                { label: "rad", write: "\\ \\text{rad}" },
+                { label: "≦", write: "\\le" },
+                { label: "≧", write: "\\ge" },
+            ],
+            "微積分・極限": [
+                { html: `<div class="icon-lim"><span class="lim-main">lim</span><span class="lim-sub">x→0</span></div>`, write: "\\lim_{x \\to 0}" },
+                { html: `<div class="icon-lim"><span class="lim-main">lim</span><span class="lim-sub">x→∞</span></div>`, write: "\\lim_{x \\to \\infty}" },
+                { label: "∫", write: "\\int" },
+                { label: "∫a..b", write: "\\int_{}^{}", key: "left" },
+                { label: "∑", write: "\\sum_{}^{}", key: "left" }, 
+                { label: "dx", write: "dx" },
+                { label: "d/dx", write: "\\frac{d}{dx}" },
+                { label: "∂", write: "\\partial" },
+                { label: "′", write: "'" },
+            ],
+            "行列・ベクトル": [
+                // 横ベクトル 1x2
+                { html: createMatrixIcon(1,2), write: "\\begin{pmatrix} & \\end{pmatrix}", key: "left" },
+                // 横ベクトル 1x3
+                { html: createMatrixIcon(1,3), write: "\\begin{pmatrix} & & \\end{pmatrix}", key: "left" },
+                // 縦ベクトル 2x1
+                { html: createMatrixIcon(2,1), write: "\\begin{pmatrix} \\\\ \\end{pmatrix}", key: "left" },
+                // 縦ベクトル 3x1
+                { html: createMatrixIcon(3,1), write: "\\begin{pmatrix} \\\\ \\\\ \\end{pmatrix}", key: "left" },
+                // 行列 2x2
+                { html: createMatrixIcon(2,2), write: "\\begin{pmatrix} & \\\\ & \\end{pmatrix}", key: "left" },
+                // 行列 3x3
+                { html: createMatrixIcon(3,3), write: "\\begin{pmatrix} & & \\\\ & & \\\\ & & \\end{pmatrix}", key: "left" },
+            ],
+            "指数・対数": [
+                { label: "log", write: "\\log", isFunc: true },
+                { label: "ln", write: "\\ln", isFunc: true },
+                { label: "log₁₀", write: "\\log_{10}", isFunc: true },
+                { html: `<div class="icon-log-base">log<span class="log-sub">a</span></div>`, write: "\\log_{}", isFunc: false, key: "left" },
+                { label: "eˣ", write: "e^{}", key: "left" },
+                { label: "10ˣ", write: "10^{}", key: "left" },
+            ],
+            "三角関数": [
+                { label: "sin", write: "\\sin", isFunc: true }, 
+                { label: "cos", write: "\\cos", isFunc: true }, 
+                { label: "tan", write: "\\tan", isFunc: true },
+                { label: "sec", write: "\\sec", isFunc: true }, 
+                { label: "csc", write: "\\csc", isFunc: true }, 
+                { label: "cot", write: "\\cot", isFunc: true }, 
+                { label: "sin⁻¹", write: "\\arcsin", isFunc: true }, 
+                { label: "cos⁻¹", write: "\\arccos", isFunc: true }, 
+                { label: "tan⁻¹", write: "\\arctan", isFunc: true },
+                { label: "θ", write: "\\theta" }, 
+                { label: "°", write: "^\\circ" },
+            ],
+            "双曲線": [
+                { label: "sinh", write: "\\sinh", isFunc: true }, 
+                { label: "cosh", write: "\\cosh", isFunc: true }, 
+                { label: "tanh", write: "\\tanh", isFunc: true },
+                { label: "sech", write: "\\sech", isFunc: true }, 
+                { label: "csch", write: "\\csch", isFunc: true }, 
+                { label: "coth", write: "\\coth", isFunc: true },
+                { label: "ArcSinh", write: "\\operatorname{arsinh}", isFunc: true, cls: "btn-small-text" },
+                { label: "ArcCosh", write: "\\operatorname{arcosh}", isFunc: true, cls: "btn-small-text" },
+                { label: "ArcTanh", write: "\\operatorname{artanh}", isFunc: true, cls: "btn-small-text" },
+                { label: "ArcSech", write: "\\operatorname{arsech}", isFunc: true, cls: "btn-small-text" },
+                { label: "ArcCsch", write: "\\operatorname{arcsch}", isFunc: true, cls: "btn-small-text" },
+                { label: "ArcCoth", write: "\\operatorname{arcoth}", isFunc: true, cls: "btn-small-text" },
+            ],
+            "集合 (R,Z...)": [
+                { html: `<span style="font-weight:bold">R</span>`, write: "ℝ" }, 
+                { html: `<span style="font-weight:bold">Z</span>`, write: "ℤ" }, 
+                { html: `<span style="font-weight:bold">N</span>`, write: "ℕ" },
+                { html: `<span style="font-weight:bold">Q</span>`, write: "ℚ" },
+                { html: `<span style="font-weight:bold">C</span>`, write: "ℂ" },
+                { label: "∈", write: "\\in" }, { label: "∉", write: "\\notin" },
+                { label: "⊂", write: "\\subset" }, { label: "⊃", write: "\\supset" },
+                { label: "∪", write: "\\cup" }, { label: "∩", write: "\\cap" },
+                { label: "∅", write: "\\emptyset" },
+                { label: "∀", write: "\\forall" }, { label: "∃", write: "\\exists" },
+                { label: "⇒", write: "\\Rightarrow" }, { label: "⇔", write: "\\Leftrightarrow" },
+            ],
+            "括弧": [
+                { label: "( )", write: "\\left(\\right)", key: "left" },
+                { label: "[ ]", write: "\\left[\\right]", key: "left" },
+                { label: "{ }", write: "\\left\\{\\right\\}", key: "left" },
+                { label: "| |", write: "\\left|\\right|", key: "left" },
+                { label: "|| ||", write: "\\left\\|\\right\\|", key: "left" }, 
+                { label: "⟨ ⟩", write: "\\left\\langle\\right\\rangle", key: "left" }, 
+                { label: "⌊ ⌋", write: "\\left\\lfloor\\right\\rfloor", key: "left" },
+                { label: "⌈ ⌉", write: "\\left\\lceil\\right\\rceil", key: "left" },
+            ],
+            "ギリシャ": [
+                { label: "α", write: "\\alpha" }, { label: "β", write: "\\beta" }, { label: "γ", write: "\\gamma" },
+                { label: "δ", write: "\\delta" }, { label: "ε", write: "\\epsilon" }, { label: "λ", write: "\\lambda" },
+                { label: "μ", write: "\\mu" }, { label: "σ", write: "\\sigma" }, { label: "φ", write: "\\phi" },
+                { label: "ω", write: "\\omega" }, { label: "Δ", write: "\\Delta" }, { label: "Ω", write: "\\Omega" },
+                { label: "Σ", write: "\\Sigma" },
+            ]
+        };
+
+        let currentCat = "基本";
+        
+        function renderUI() {
+            const catContainer = document.getElementById('category-container');
+            catContainer.innerHTML = "";
+            Object.keys(keySets).forEach(cat => {
+                const btn = document.createElement('button');
+                btn.className = `cat-btn ${cat === currentCat ? 'active' : ''}`;
+                btn.innerText = cat;
+                btn.onclick = () => { currentCat = cat; renderUI(); };
+                catContainer.appendChild(btn);
+            });
+
+            const keysContainer = document.getElementById('keys-container');
+            keysContainer.innerHTML = "";
+            keySets[currentCat].forEach(k => {
+                const btn = document.createElement('button');
+                btn.className = `math-btn ${k.cls || ''}`;
+                btn.innerHTML = k.html || `<span style="font-size:1.1rem;">${k.label}</span>`;
+                
+                btn.onclick = (e) => {
+                    e.preventDefault();
+                    if (k.cmd) {
+                        mathField.cmd(k.cmd);
+                    } else if (k.write) {
+                        let textToWrite = k.write;
+                        if (k.isFunc && isAutoParen) {
+                            textToWrite += "\\left(\\right)";
+                        }
+                        mathField.write(textToWrite);
+                        
+                        if(k.key === 'left' || (k.isFunc && isAutoParen)) {
+                            mathField.keystroke('Left');
+                        }
+                    }
+                    mathField.focus();
+                };
+                keysContainer.appendChild(btn);
+            });
+        }
+
+        async function updateOutput() {
+            let latex = mathField.latex();
+            
+            latex = latex.replace(/ℝ/g, "\\mathbb{R}")
+                         .replace(/ℤ/g, "\\mathbb{Z}")
+                         .replace(/ℕ/g, "\\mathbb{N}")
+                         .replace(/ℚ/g, "\\mathbb{Q}")
+                         .replace(/ℂ/g, "\\mathbb{C}");
+
+            let cleanLatex = latex.replace(/^\\displaystyle\s?/, ''); 
+
+            if (currentMode === 'latex') {
+                outputArea.value = cleanLatex;
+            } else if (currentMode === 'text') {
+                outputArea.value = latexToText(cleanLatex);
+            }
+        }
+
+        function reflectToEditor() {
+            const val = outputArea.value;
+            
+            if (currentMode === 'latex') {
+                mathField.latex('\\displaystyle ' + val);
+            } else if (currentMode === 'text') {
+                const converted = textToLatex(val);
+                mathField.latex('\\displaystyle ' + converted);
+            }
+        }
+
+        function textToLatex(text) {
+            let tex = text;
+            tex = tex.replace(/pi/g, "\\pi").replace(/theta/g, "\\theta");
+            tex = tex.replace(/sqrt\((.+?)\)/g, "\\sqrt{$1}");
+            tex = tex.replace(/>=/g, "\\ge").replace(/<=/g, "\\le").replace(/!=/g, "\\neq");
+            tex = tex.replace(/\((.+?)\)\/\((.+?)\)/g, "\\frac{$1}{$2}");
+            tex = tex.replace(/\^(\w+)/g, "^{$1}"); 
+            tex = tex.replace(/\^\((.+?)\)/g, "^{$1}"); 
+            tex = tex.replace(/R/g, "ℝ").replace(/Z/g, "ℤ").replace(/N/g, "ℕ").replace(/Q/g, "ℚ").replace(/C/g, "ℂ");
+            tex = tex.replace(/asinh/g, "\\operatorname{arsinh}").replace(/ArcSinh/g, "\\operatorname{arsinh}"); 
+            tex = tex.replace(/log/g, "\\log").replace(/ln/g, "\\ln");
+            tex = tex.replace(/sin/g, "\\sin").replace(/cos/g, "\\cos").replace(/tan/g, "\\tan");
+            tex = tex.replace(/sec/g, "\\sec").replace(/csc/g, "\\csc").replace(/cot/g, "\\cot");
+            tex = tex.replace(/sech/g, "\\sech").replace(/csch/g, "\\csch").replace(/coth/g, "\\coth");
+            // Matrix {{a,b},{c,d}} -> pmatrix
+            tex = tex.replace(/\{\{(.+?)\}\}/g, (match) => {
+                let inner = match.slice(2, -2);
+                let rows = inner.split("},{");
+                let latexRows = rows.map(r => r.replace(/,/g, "&"));
+                return "\\begin{pmatrix}" + latexRows.join("\\\\") + "\\end{pmatrix}";
+            });
+
+            return tex;
+        }
+
+        function latexToText(latex) {
+            let text = latex;
+            text = text.replace(/\\times/g, "*").replace(/\\div/g, "/");
+            text = text.replace(/\\le/g, "<=").replace(/\\ge/g, ">=");
+            text = text.replace(/\\neq/g, "!=");
+            text = text.replace(/\\pi/g, "pi").replace(/\\theta/g, "theta");
+            text = text.replace(/\\infty/g, "infinity");
+            
+            while (text.match(/\\frac\{([^{}]+)\}\{([^{}]+)\}/)) {
+                text = text.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g, "($1)/($2)");
+            }
+            
+            text = text.replace(/\\sqrt\{(.+?)\}/g, "sqrt($1)");
+            text = text.replace(/\\sqrt\[(.+?)\]\{(.+?)\}/g, "root($1, $2)");
+            text = text.replace(/\^\{(.+?)\}/g, "^($1)");
+            text = text.replace(/_\{(.+?)\}/g, "_($1)");
+            
+            text = text.replace(/\\left/g, "").replace(/\\right/g, "");
+            
+            // 集合
+            text = text.replace(/\\mathbb\{R\}/g, "R").replace(/\\mathbb\{Z\}/g, "Z").replace(/\\mathbb\{N\}/g, "N")
+                       .replace(/\\mathbb\{Q\}/g, "Q").replace(/\\mathbb\{C\}/g, "C");
+            
+            // 関数 (operatorname 除去)
+            text = text.replace(/\\operatorname\{arsinh\}/g, "asinh");
+            text = text.replace(/\\operatorname\{arcosh\}/g, "acosh");
+            text = text.replace(/\\operatorname\{artanh\}/g, "atanh");
+            
+            // Matrix to text {{a,b},{c,d}}
+            text = text.replace(/\\begin\{pmatrix\}(.+?)\\end\{pmatrix\}/g, (match, content) => {
+                let rows = content.split("\\\\");
+                let textRows = rows.map(r => "{" + r.replace(/&/g, ",") + "}");
+                return "{" + textRows.join(",") + "}";
+            });
+
+            text = text.replace(/\\[a-zA-Z]+/g, " "); 
+            text = text.replace(/[{}]/g, ""); 
+            text = text.replace(/\s+/g, " ").trim();
+            return text;
+        }
+
+        function switchTab(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.output-tab').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            if(mode === 'text' || mode === 'latex') {
+                hintMsg.innerText = "下のボックスを編集して「▲ エディタに反映」を押すと、上の数式が更新されます";
+                btnReflect.classList.remove('hidden');
+            }
+            updateOutput();
+        }
+
+        function clearField() { mathField.latex('\\displaystyle '); mathField.focus(); }
+        function copyOutput() {
+            outputArea.select(); document.execCommand('copy'); alert("コピーしました");
+        }
+        function saveImage() {
+            const target = document.getElementById('capture-target');
+            html2canvas(target, { backgroundColor: "#ffffff", scale: 3 }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'duck_math_pro.png';
+                link.href = canvas.toDataURL();
+                link.click();
+            });
+        }
+
+        renderUI();
+        mathField.focus();
+    </script>
+</body>
+</html>
